@@ -9,7 +9,7 @@
 
 1. IPv4-only, CIDR-only network lists in an `ipset hash:net`-compatible format. Domain lists (including wildcard masks) where the service publishes domains.
 2. Updates daily at 04:17 UTC via GitHub Actions; manual run: **Actions → Update IP lists → Run workflow**.
-3. One folder per service; third-party dependencies are kept in separate groups that can be toggled independently.
+3. One folder per service; one network list and one domain list per service. Logical groups (for example third-party dependencies or outbound agent ranges) are separated by comment blocks inside the file, so they can be toggled independently.
 4. Sources are official vendor documents and APIs only — no scraping, no third-party aggregators.
 5. No excess or trailing whitespace. Lines are terminated with `\n`.
 
@@ -19,18 +19,15 @@ The links below will direct you to the processed versions of the files in this r
 
 | File Name | Format | Protocol | Official |
 | --- | --- | --- | --- |
-| whatsapp_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/WhatsApp/whatsapp_cidr_ipv4.txt) |<br>| cursor_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_cidr_ipv4.txt) |
+| whatsapp_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/WhatsApp/whatsapp_cidr_ipv4.txt) |
+| cursor_cidr_ipv4.txt ¹ | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_cidr_ipv4.txt) |
 | cursor_domains.txt | txt | Domain | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_domains.txt) |
-| cursor_git_egress_proxy_ipv4.txt ¹ | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_git_egress_proxy_ipv4.txt) |
-| cursor_origin_ipv4.txt ¹ | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_origin_ipv4.txt) |
-| openai_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_cidr_ipv4.txt) |
-| openai_domains.txt | txt | Domain | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_domains.txt) |
-| openai_3rd_party_cidr_ipv4.txt ² | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_3rd_party_cidr_ipv4.txt) |
-| openai_3rd_party_domains.txt ² | txt | Domain | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_3rd_party_domains.txt) |
+| openai_cidr_ipv4.txt ² | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_cidr_ipv4.txt) |
+| openai_domains.txt ² | txt | Domain | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_domains.txt) |
 
-¹ **Outbound** addresses of Cursor Cloud Agents (traffic *from* Cursor *to* your infrastructure), not service endpoints. Allowlist them if Cursor agents must reach your git hosts.
+¹ Contains three comment-separated blocks: service endpoints (traffic *to* Cursor), git egress proxy and Origin (**outbound** addresses of Cursor Cloud Agents — allowlist them only if Cursor agents must reach your git hosts).
 
-² Third-party dependencies used by ChatGPT (SendGrid, Intercom, WorkOS, Cloudflare, Apple, Stripe, Sentry, Datadog). Not owned by OpenAI — separate group, can be disabled independently.
+² Contains two comment-separated blocks: OpenAI and third-party dependencies used by ChatGPT (SendGrid, Intercom, WorkOS, Cloudflare, Apple, Stripe, Sentry, Datadog). The third-party block is not owned by OpenAI and can be disabled independently.
 
 ## Sources
 

@@ -29,8 +29,6 @@ WHATSAPP_FILE = ROOT / "WhatsApp" / "whatsapp_cidr_ipv4.txt"
 CURSOR_DIR = ROOT / "Cursor"
 CURSOR_CIDR_FILE = CURSOR_DIR / "cursor_cidr_ipv4.txt"
 CURSOR_DOMAINS_FILE = CURSOR_DIR / "cursor_domains.txt"
-CURSOR_GIT_PROXY_FILE = CURSOR_DIR / "cursor_git_egress_proxy_ipv4.txt"
-CURSOR_ORIGIN_FILE = CURSOR_DIR / "cursor_origin_ipv4.txt"
 
 CURSOR_IPS_JSON_URL = "https://cursor.com/docs/ips.json"
 
@@ -146,9 +144,7 @@ OPENAI_3RD_PARTY_DOMAINS = [
 
 OPENAI_DIR = ROOT / "OpenAI"
 OPENAI_DOMAINS_FILE = OPENAI_DIR / "openai_domains.txt"
-OPENAI_3RD_PARTY_DOMAINS_FILE = OPENAI_DIR / "openai_3rd_party_domains.txt"
 OPENAI_CIDR_FILE = OPENAI_DIR / "openai_cidr_ipv4.txt"
-OPENAI_3RD_PARTY_CIDR_FILE = OPENAI_DIR / "openai_3rd_party_cidr_ipv4.txt"
 
 OPENAI_SOURCE_URL = (
     "https://help.openai.com/en/articles/9247338-"
@@ -157,7 +153,7 @@ OPENAI_SOURCE_URL = (
 
 DOH_SERVERS = [
     "https://dns.google/resolve?name={name}&type=A",
-    "https://cloudflare-dns.com/dns-query?name={name}&type=A",
+    "https://1.1.1.1/dns-query?name={name}&type=A",
 ]
 
 HEADERS = {
@@ -180,7 +176,7 @@ def resolve_doh(domain: str) -> set[str]:
     for tpl in DOH_SERVERS:
         try:
             req = urllib.request.Request(tpl.format(name=domain), headers=HEADERS)
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.load(resp)
             for ans in data.get("Answer", []):
                 if ans.get("type") == 1:
@@ -235,25 +231,53 @@ def update_whatsapp() -> None:
     write_if_changed(WHATSAPP_FILE, text)
 
 
+def section(title: str, lines: list[str] | set[str], note: str | None = None,
+            sort_ips: bool = False) -> str:
+    """Блок комментария-раздела внутри списка + строки данных."""
+    out = (
+        "\n# ------------------------------------------------------------\n"
+        f"# {title}\n"
+    )
+    if note:
+        out += f"# {note}\n"
+    out += "# ------------------------------------------------------------\n"
+    items = sorted(lines, key=lambda i: int(ipaddress.IPv4Address(i))) if sort_ips else list(lines)
+    if items:
+        out += "".join(f"{item}\n" for item in items)
+    else:
+        out += "# (no entries resolved at last check)\n"
+    return out
+
+
 def update_cursor() -> None:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    all_ips: set[str] = set()
-    inactive: list[str] = []
-    wildcards = [d for d in CURSOR_DOMAINS if d.startswith("*.")]
-    for domain in CURSOR_DOMAINS:
-        if domain.startswith("*."):
-            continue
-        ips = resolve(domain)
-        if ips:
-            print(f"  {domain}: {', '.join(sorted(ips, key=lambda i: int(ipaddress.IPv4Address(i))))}")
-            all_ips |= ips
-        else:
-            print(f"  {domain}: нет A-записей")
-            inactive.append(domain)
-
-    if not all_ips:
+    # --- Сервисные домены -> IP (трафик К Cursor) ---
+    svc_ips, inactive, wildcards = resolve_group(CURSOR_DOMAINS)
+    if not svc_ips:
         raise RuntimeError("Не удалось резолвить ни один домен Cursor — списки не тронуты")
+
+    # --- Git egress proxy (исходящие ИЗ Cursor Cloud Agents) ---
+    api_proxy: set[str] | None = None
+    try:
+        data = json.loads(fetch_text(CURSOR_IPS_JSON_URL))
+        api_proxy = {
+            entry.split("/")[0]
+            for entry in data.get("gitEgressProxy", [])
+            if is_usable(entry.split("/")[0])
+        }
+        print(f"  ips.json gitEgressProxy: {', '.join(sorted(api_proxy))}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"  ! не удалось получить ips.json, активные адреса берём из документации: {exc}",
+              file=sys.stderr)
+
+    proxy_ips = set(CURSOR_GIT_EGRESS_PROXY_IPS) | (api_proxy or set())
+    if not proxy_ips:
+        raise RuntimeError("Пустой список git egress proxy — файл не тронут")
+    # Если API недоступен, активными считаем первые три адреса из документации
+    # (именно они возвращаются ips.json).
+    active = api_proxy if api_proxy is not None else set(CURSOR_GIT_EGRESS_PROXY_IPS[:3])
+    reserved = sorted(proxy_ips - active, key=lambda i: int(ipaddress.IPv4Address(i)))
 
     header = f"""# ============================================================
 #
@@ -261,9 +285,12 @@ def update_cursor() -> None:
 #
 # ipv4 hash:net ipset
 #
-# List of the Cursor service IP addresses (resolved from official domains).
+# All Cursor IP ranges in one file, grouped by comment blocks:
+#   1. Service endpoints (traffic TO Cursor)
+#   2. Git egress proxy (OUTBOUND from Cursor Cloud Agents)
+#   3. Origin (OUTBOUND from Cursor Cloud Agents)
 #
-# Maintainer      : DNS resolve, see scripts/update_lists.py
+# Maintainer      : DNS resolve + Cursor docs, see scripts/update_lists.py
 # List source URL : https://cursor.com/docs/cloud-agent/security-network
 # Domains         : Cursor/cursor_domains.txt
 #
@@ -272,10 +299,27 @@ def update_cursor() -> None:
 #
 # ============================================================
 """
-    sorted_ips = sorted(all_ips, key=lambda i: int(ipaddress.IPv4Address(i)))
-    cidr_text = header + "".join(f"{ip}/32\n" for ip in sorted_ips)
-    write_if_changed(CURSOR_CIDR_FILE, cidr_text)
+    text = header
+    text += section(
+        "Cursor service endpoints (traffic TO Cursor, resolved from domains)",
+        [f"{ip}/32" for ip in sorted(svc_ips, key=lambda i: int(ipaddress.IPv4Address(i)))],
+    )
+    proxy_note = None
+    if reserved:
+        proxy_note = "Allocated, not yet serving traffic: " + ", ".join(reserved)
+    text += section(
+        "Cursor git egress proxy (OUTBOUND from Cursor Cloud Agents, "
+        "allowlist on your side if agents must reach your git hosts)",
+        [f"{ip}/32" for ip in sorted(proxy_ips, key=lambda i: int(ipaddress.IPv4Address(i)))],
+        proxy_note,
+    )
+    text += section(
+        "Cursor Origin (OUTBOUND, Cloud Agents used alongside Origin)",
+        [f"{ip}/32" for ip in sorted(CURSOR_ORIGIN_IPS, key=lambda i: int(ipaddress.IPv4Address(i)))],
+    )
+    write_if_changed(CURSOR_CIDR_FILE, text)
 
+    # --- Файл доменов ---
     domains_header = f"""# ============================================================
 #
 # cursor_domains
@@ -297,81 +341,6 @@ def update_cursor() -> None:
     write_if_changed(CURSOR_DOMAINS_FILE, domains_text)
 
 
-def update_cursor_egress() -> None:
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    # Активные адреса git egress proxy из официального API
-    api_proxy: set[str] | None = None
-    try:
-        data = json.loads(fetch_text(CURSOR_IPS_JSON_URL))
-        api_proxy = {
-            entry.split("/")[0]
-            for entry in data.get("gitEgressProxy", [])
-            if is_usable(entry.split("/")[0])
-        }
-        print(f"  ips.json gitEgressProxy: {', '.join(sorted(api_proxy))}")
-    except Exception as exc:  # noqa: BLE001
-        print(f"  ! не удалось получить ips.json, активные адреса берём из документации: {exc}",
-              file=sys.stderr)
-
-    proxy_ips = set(CURSOR_GIT_EGRESS_PROXY_IPS) | (api_proxy or set())
-    if not proxy_ips:
-        raise RuntimeError("Пустой список git egress proxy — файл не тронут")
-
-    # Если API недоступен, активными считаем первые три адреса из документации
-    # (именно они возвращаются ips.json).
-    active = api_proxy if api_proxy is not None else set(CURSOR_GIT_EGRESS_PROXY_IPS[:3])
-    reserved = sorted(proxy_ips - active, key=lambda i: int(ipaddress.IPv4Address(i)))
-
-    proxy_header = f"""# ============================================================
-#
-# cursor_git_egress_proxy_ipv4
-#
-# ipv4 hash:net ipset
-#
-# Cursor git egress proxy IPs (outbound FROM Cursor Cloud Agents).
-# Allowlist these on your side if agents must reach your git hosts.
-#
-# Maintainer      : Cursor docs + https://cursor.com/docs/ips.json
-# List source URL : https://cursor.com/docs/cloud-agent/security-network
-#
-# Category        : servers
-# Updated (UTC)   : {now}
-#
-"""
-    if reserved:
-        proxy_header += "# Allocated, not yet serving traffic: " + ", ".join(reserved) + "\n#\n"
-    proxy_header += "# ============================================================\n"
-    proxy_text = proxy_header + "".join(
-        f"{ip}/32\n"
-        for ip in sorted(proxy_ips, key=lambda i: int(ipaddress.IPv4Address(i)))
-    )
-    write_if_changed(CURSOR_GIT_PROXY_FILE, proxy_text)
-
-    origin_header = f"""# ============================================================
-#
-# cursor_origin_ipv4
-#
-# ipv4 hash:net ipset
-#
-# Additional egress IPs for Cursor Cloud Agents used alongside Origin.
-# Allowlist these on top of cursor_git_egress_proxy_ipv4.
-#
-# Maintainer      : Cursor docs
-# List source URL : https://cursor.com/docs/cloud-agent/security-network
-#
-# Category        : servers
-# Updated (UTC)   : {now}
-#
-# ============================================================
-"""
-    origin_text = origin_header + "".join(
-        f"{ip}/32\n"
-        for ip in sorted(CURSOR_ORIGIN_IPS, key=lambda i: int(ipaddress.IPv4Address(i)))
-    )
-    write_if_changed(CURSOR_ORIGIN_FILE, origin_text)
-
-
 def resolve_group(domains: list[str]) -> tuple[set[str], list[str], list[str]]:
     """Резолвит конкретные домены группы. Возвращает (IP, inactive, wildcards)."""
     all_ips: set[str] = set()
@@ -390,123 +359,86 @@ def resolve_group(domains: list[str]) -> tuple[set[str], list[str], list[str]]:
     return all_ips, inactive, wildcards
 
 
-def build_domains_text(title: str, source: str, now: str,
-                       wildcards: list[str], inactive: list[str],
-                       domains: list[str]) -> str:
-    header = f"""# ============================================================
-#
-# {title}
-#
-# List of domains for firewall rules.
-# Source: {source}
-# Updated (UTC)   : {now}
-#
-"""
-    if wildcards:
-        header += (
-            "# Wildcard entries (subdomain masks for domain-based rules, "
-            "not resolvable directly): " + ", ".join(wildcards) + "\n"
-        )
-    if inactive:
-        header += "# No A records at last check: " + ", ".join(inactive) + "\n"
-    header += "# ============================================================\n"
-    return header + "".join(f"{d}\n" for d in domains)
+def update_openai() -> None:
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    print("-- OpenAI --")
+    oai_ips, oai_inactive, oai_wildcards = resolve_group(OPENAI_DOMAINS)
+    print("-- OpenAI 3rd party --")
+    tp_ips, tp_inactive, tp_wildcards = resolve_group(OPENAI_3RD_PARTY_DOMAINS)
 
-def build_cidr_text(title: str, description: str, source: str,
-                    domains_ref: str, now: str, ips: set[str]) -> str:
-    header = f"""# ============================================================
+    if not oai_ips and not tp_ips:
+        raise RuntimeError("Не удалось резолвить ни один домен OpenAI — списки не тронуты")
+
+    cidr_header = f"""# ============================================================
 #
-# {title}
+# openai_cidr_ipv4
 #
 # ipv4 hash:net ipset
 #
-# {description}
+# All OpenAI/ChatGPT IP addresses in one file, grouped by comment blocks:
+#   1. OpenAI service endpoints (traffic TO OpenAI)
+#   2. Third-party dependencies (NOT owned by OpenAI)
 #
 # Maintainer      : DNS resolve, see scripts/update_lists.py
-# List source URL : {source}
-# Domains         : {domains_ref}
+# List source URL : {OPENAI_SOURCE_URL}
+# Domains         : OpenAI/openai_domains.txt
 #
 # Category        : servers
 # Updated (UTC)   : {now}
 #
 # ============================================================
 """
-    return header + "".join(
-        f"{ip}/32\n"
-        for ip in sorted(ips, key=lambda i: int(ipaddress.IPv4Address(i)))
+    cidr_text = cidr_header
+    cidr_text += section(
+        "OpenAI/ChatGPT service endpoints (traffic TO OpenAI, resolved from domains)",
+        [f"{ip}/32" for ip in sorted(oai_ips, key=lambda i: int(ipaddress.IPv4Address(i)))],
     )
+    cidr_text += section(
+        "Third-party dependencies used by OpenAI — NOT owned by OpenAI "
+        "(SendGrid, Intercom, WorkOS, Cloudflare, Apple, Stripe, Sentry, Datadog)",
+        [f"{ip}/32" for ip in sorted(tp_ips, key=lambda i: int(ipaddress.IPv4Address(i)))],
+    )
+    write_if_changed(OPENAI_CIDR_FILE, cidr_text)
 
-
-def update_openai() -> None:
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    groups = [
-        {
-            "label": "OpenAI",
-            "title": "openai",
-            "domains": OPENAI_DOMAINS,
-            "domains_file": OPENAI_DOMAINS_FILE,
-            "cidr_file": OPENAI_CIDR_FILE,
-            "cidr_description": (
-                "OpenAI/ChatGPT service IP addresses "
-                "(resolved from official domains)."
-            ),
-            "domains_ref": "OpenAI/openai_domains.txt",
-        },
-        {
-            "label": "OpenAI 3rd party",
-            "title": "openai_3rd_party",
-            "domains": OPENAI_3RD_PARTY_DOMAINS,
-            "domains_file": OPENAI_3RD_PARTY_DOMAINS_FILE,
-            "cidr_file": OPENAI_3RD_PARTY_CIDR_FILE,
-            "cidr_description": (
-                "Third-party dependency IPs used by OpenAI services "
-                "(SendGrid, Intercom, WorkOS, Cloudflare, Apple, Stripe, "
-                "Sentry, Datadog). Not owned by OpenAI."
-            ),
-            "domains_ref": "OpenAI/openai_3rd_party_domains.txt",
-        },
-    ]
-
-    for group in groups:
-        print(f"-- {group['label']} --")
-        ips, inactive, wildcards = resolve_group(group["domains"])
-        if not ips:
-            print(f"  ! ни один домен группы не резолвится — CIDR-файл не тронут",
-                  file=sys.stderr)
-        else:
-            write_if_changed(
-                group["cidr_file"],
-                build_cidr_text(
-                    f"{group['title']}_cidr_ipv4",
-                    group["cidr_description"],
-                    OPENAI_SOURCE_URL,
-                    group["domains_ref"],
-                    now,
-                    ips,
-                ),
-            )
-        write_if_changed(
-            group["domains_file"],
-            build_domains_text(
-                f"{group['title']}_domains",
-                OPENAI_SOURCE_URL,
-                now,
-                wildcards,
-                inactive,
-                group["domains"],
-            ),
+    domains_header = f"""# ============================================================
+#
+# openai_domains
+#
+# All OpenAI/ChatGPT domains in one file, grouped by comment blocks:
+#   1. OpenAI domains
+#   2. Third-party dependencies (NOT owned by OpenAI)
+#
+# Source: {OPENAI_SOURCE_URL}
+# Updated (UTC)   : {now}
+#
+"""
+    all_wildcards = oai_wildcards + tp_wildcards
+    if all_wildcards:
+        domains_header += (
+            "# Wildcard entries (subdomain masks for domain-based rules, "
+            "not resolvable directly): " + ", ".join(all_wildcards) + "\n"
         )
+    all_inactive = oai_inactive + tp_inactive
+    if all_inactive:
+        domains_header += "# No A records at last check: " + ", ".join(all_inactive) + "\n"
+    domains_header += "# ============================================================\n"
+
+    domains_text = domains_header
+    domains_text += section("OpenAI domains", OPENAI_DOMAINS)
+    domains_text += section(
+        "Third-party dependencies used by OpenAI — NOT owned by OpenAI "
+        "(separate group, can be disabled independently)",
+        OPENAI_3RD_PARTY_DOMAINS,
+    )
+    write_if_changed(OPENAI_DOMAINS_FILE, domains_text)
 
 
 def main() -> None:
     print("== WhatsApp ==")
     update_whatsapp()
-    print("== Cursor (сервисные домены) ==")
+    print("== Cursor ==")
     update_cursor()
-    print("== Cursor (egress: git proxy + Origin) ==")
-    update_cursor_egress()
     print("== OpenAI / ChatGPT ==")
     update_openai()
     print("Готово.")

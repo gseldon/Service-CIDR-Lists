@@ -4,16 +4,23 @@
 #
 # ipv4 hash:net ipset
 #
-# List of the Cursor service IP addresses (resolved from official domains).
+# All Cursor IP ranges in one file, grouped by comment blocks:
+#   1. Service endpoints (traffic TO Cursor)
+#   2. Git egress proxy (OUTBOUND from Cursor Cloud Agents)
+#   3. Origin (OUTBOUND from Cursor Cloud Agents)
 #
-# Maintainer      : DNS resolve, see scripts/update_lists.py
+# Maintainer      : DNS resolve + Cursor docs, see scripts/update_lists.py
 # List source URL : https://cursor.com/docs/cloud-agent/security-network
 # Domains         : Cursor/cursor_domains.txt
 #
 # Category        : servers
-# Updated (UTC)   : 2026-11-12T20:50:41Z
+# Updated (UTC)   : 2026-11-12T21:40:44Z
 #
 # ============================================================
+
+# ------------------------------------------------------------
+# Cursor service endpoints (traffic TO Cursor, resolved from domains)
+# ------------------------------------------------------------
 8.6.112.0/32
 8.6.112.5/32
 8.47.69.0/32
@@ -30,3 +37,43 @@
 104.18.19.125/32
 104.21.77.42/32
 172.67.204.117/32
+
+# ------------------------------------------------------------
+# Cursor git egress proxy (OUTBOUND from Cursor Cloud Agents, allowlist on your side if agents must reach your git hosts)
+# Allocated, not yet serving traffic: 3.208.51.163, 3.224.130.48, 3.234.118.132, 18.210.232.136, 34.197.19.148, 34.198.251.120, 34.199.187.247, 35.170.160.152, 44.215.226.85, 52.202.172.69, 54.81.109.217, 54.204.61.44, 54.236.99.119, 67.202.63.191, 100.63.97.141, 100.63.144.57, 184.193.125.229, 184.193.223.40, 184.194.140.210, 184.194.175.144, 184.194.208.56
+# ------------------------------------------------------------
+3.208.51.163/32
+3.209.66.12/32
+3.224.130.48/32
+3.234.118.132/32
+18.210.232.136/32
+34.197.19.148/32
+34.198.251.120/32
+34.199.187.247/32
+35.170.160.152/32
+44.215.226.85/32
+52.44.113.131/32
+52.202.172.69/32
+54.81.109.217/32
+54.204.61.44/32
+54.236.99.119/32
+67.202.63.191/32
+100.63.97.141/32
+100.63.144.57/32
+184.73.225.134/32
+184.193.125.229/32
+184.193.223.40/32
+184.194.140.210/32
+184.194.175.144/32
+184.194.208.56/32
+
+# ------------------------------------------------------------
+# Cursor Origin (OUTBOUND, Cloud Agents used alongside Origin)
+# ------------------------------------------------------------
+3.223.245.201/32
+34.192.39.182/32
+34.194.133.23/32
+35.170.116.221/32
+44.217.29.124/32
+50.16.106.255/32
+54.164.185.10/32

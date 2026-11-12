@@ -4,16 +4,22 @@
 #
 # ipv4 hash:net ipset
 #
-# OpenAI/ChatGPT service IP addresses (resolved from official domains).
+# All OpenAI/ChatGPT IP addresses in one file, grouped by comment blocks:
+#   1. OpenAI service endpoints (traffic TO OpenAI)
+#   2. Third-party dependencies (NOT owned by OpenAI)
 #
 # Maintainer      : DNS resolve, see scripts/update_lists.py
 # List source URL : https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps
 # Domains         : OpenAI/openai_domains.txt
 #
 # Category        : servers
-# Updated (UTC)   : 2026-11-12T21:07:23Z
+# Updated (UTC)   : 2026-11-12T21:41:02Z
 #
 # ============================================================
+
+# ------------------------------------------------------------
+# OpenAI/ChatGPT service endpoints (traffic TO OpenAI, resolved from domains)
+# ------------------------------------------------------------
 8.6.112.0/32
 8.6.112.5/32
 8.47.69.0/32
@@ -30,3 +36,50 @@
 172.65.90.21/32
 172.65.90.22/32
 172.65.90.23/32
+
+# ------------------------------------------------------------
+# Third-party dependencies used by OpenAI — NOT owned by OpenAI (SendGrid, Intercom, WorkOS, Cloudflare, Apple, Stripe, Sentry, Datadog)
+# ------------------------------------------------------------
+3.233.158.30/32
+3.233.158.31/32
+3.233.158.32/32
+3.233.158.33/32
+3.233.158.34/32
+3.233.158.35/32
+8.6.112.0/32
+8.6.112.5/32
+8.47.69.0/32
+8.47.69.5/32
+13.32.99.57/32
+13.32.99.78/32
+13.32.99.92/32
+13.32.99.105/32
+13.33.235.2/32
+13.33.235.9/32
+13.33.235.61/32
+13.33.235.81/32
+17.111.103.83/32
+17.171.47.21/32
+18.165.72.65/32
+18.165.72.86/32
+18.165.72.95/32
+18.165.72.104/32
+18.165.122.2/32
+18.165.122.8/32
+18.165.122.17/32
+18.165.122.118/32
+18.165.140.13/32
+18.165.140.38/32
+18.165.140.90/32
+18.165.140.101/32
+34.160.81.0/32
+104.18.94.41/32
+104.18.95.41/32
+151.101.0.176/32
+151.101.2.208/32
+151.101.64.176/32
+151.101.66.208/32
+151.101.128.176/32
+151.101.130.208/32
+151.101.192.176/32
+151.101.194.208/32

@@ -2,13 +2,20 @@
 #
 # openai_domains
 #
-# List of domains for firewall rules.
-# Source: https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps
-# Updated (UTC)   : 2026-11-12T21:07:23Z
+# All OpenAI/ChatGPT domains in one file, grouped by comment blocks:
+#   1. OpenAI domains
+#   2. Third-party dependencies (NOT owned by OpenAI)
 #
-# Wildcard entries (subdomain masks for domain-based rules, not resolvable directly): *.auth.openai.com, *.chatgpt.com, *.oaistatic.com, *.oaiusercontent.com, *.openai.com, *.oaistatsig.com
+# Source: https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps
+# Updated (UTC)   : 2026-11-12T21:41:02Z
+#
+# Wildcard entries (subdomain masks for domain-based rules, not resolvable directly): *.auth.openai.com, *.chatgpt.com, *.oaistatic.com, *.oaiusercontent.com, *.openai.com, *.oaistatsig.com, *.ct.sendgrid.net, *.intercom.io, *.intercomcdn.com
 # No A records at last check: desktop.chat.openai.com
 # ============================================================
+
+# ------------------------------------------------------------
+# OpenAI domains
+# ------------------------------------------------------------
 *.auth.openai.com
 *.chatgpt.com
 *.oaistatic.com
@@ -26,3 +33,23 @@ ios.chat.openai.com
 setup.auth.openai.com
 tcr9i.chat.openai.com
 ws.chatgpt.com
+
+# ------------------------------------------------------------
+# Third-party dependencies used by OpenAI — NOT owned by OpenAI (separate group, can be disabled independently)
+# ------------------------------------------------------------
+*.ct.sendgrid.net
+*.intercom.io
+*.intercomcdn.com
+cdn.workos.com
+challenges.cloudflare.com
+forwarder.workos.com
+frontend-apps-multi-region.workos.com
+humb.apple.com
+images.workoscdn.com
+js.intercomcdn.com
+js.stripe.com
+o207216.ingest.sentry.io
+o33249.ingest.sentry.io
+rum.browser-intake-datadoghq.com
+setup.workos.com
+workos.imgix.net
