@@ -1,11 +1,11 @@
 <div align="center">
-  <h3> 🌐 Service CIDR Lists ♻️ </h3>
+  <h3>Service CIDR Lists</h3>
   <hr>
   <p>Automatically updated IP ranges and domain lists of popular services — ready for firewall policies and network allowlists.</p>
   <hr>
 </div>
 
-## 📋 Attributes
+## Attributes
 
 1. IPv4-only, CIDR-only network lists in an `ipset hash:net`-compatible format. Domain lists (including wildcard masks) where the service publishes domains.
 2. Updates daily at 04:17 UTC via GitHub Actions; manual run: **Actions → Update IP lists → Run workflow**.
@@ -13,7 +13,7 @@
 4. Sources are official vendor documents and APIs only — no scraping, no third-party aggregators.
 5. No excess or trailing whitespace. Lines are terminated with `\n`.
 
-## 📜 FILES
+## FILES
 
 The links below will direct you to the processed versions of the files in this repository. (Files are updated daily)
 
@@ -33,7 +33,7 @@ The links below will direct you to the processed versions of the files in this r
 
 ² Third-party dependencies used by ChatGPT (SendGrid, Intercom, WorkOS, Cloudflare, Apple, Stripe, Sentry, Datadog). Not owned by OpenAI — separate group, can be disabled independently.
 
-## 🔎 Sources
+## Sources
 
 - **WhatsApp** — synced from [HybridNetworks/whatsapp-cidr](https://github.com/HybridNetworks/whatsapp-cidr) (official Meta networks).
 - **Cursor** — official domains from the [Cursor documentation](https://cursor.com/docs/cloud-agent/security-network), resolved via public DoH resolvers (Google + Cloudflare); egress addresses merged with the official API [cursor.com/docs/ips.json](https://cursor.com/docs/ips.json).
@@ -46,7 +46,7 @@ The links below will direct you to the processed versions of the files in this r
 
 ---
 
-## 📝 License
+## License
 
 ```
 MIT License
