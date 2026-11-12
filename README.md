@@ -19,15 +19,14 @@ The links below will direct you to the processed versions of the files in this r
 
 | File Name | Format | Protocol | Official |
 | --- | --- | --- | --- |
-| whatsapp_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/WhatsApp/whatsapp_cidr_ipv4.txt) |
-| cursor_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/Cursor/cursor_cidr_ipv4.txt) |
-| cursor_domains.txt | txt | Domain | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/Cursor/cursor_domains.txt) |
-| cursor_git_egress_proxy_ipv4.txt ¹ | txt | IPv4 | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/Cursor/cursor_git_egress_proxy_ipv4.txt) |
-| cursor_origin_ipv4.txt ¹ | txt | IPv4 | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/Cursor/cursor_origin_ipv4.txt) |
-| openai_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/OpenAI/openai_cidr_ipv4.txt) |
-| openai_domains.txt | txt | Domain | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/OpenAI/openai_domains.txt) |
-| openai_3rd_party_cidr_ipv4.txt ² | txt | IPv4 | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/OpenAI/openai_3rd_party_cidr_ipv4.txt) |
-| openai_3rd_party_domains.txt ² | txt | Domain | [Download](https://raw.githubusercontent.com/<user>/<repo>/main/OpenAI/openai_3rd_party_domains.txt) |
+| whatsapp_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/WhatsApp/whatsapp_cidr_ipv4.txt) |<br>| cursor_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_cidr_ipv4.txt) |
+| cursor_domains.txt | txt | Domain | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_domains.txt) |
+| cursor_git_egress_proxy_ipv4.txt ¹ | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_git_egress_proxy_ipv4.txt) |
+| cursor_origin_ipv4.txt ¹ | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/Cursor/cursor_origin_ipv4.txt) |
+| openai_cidr_ipv4.txt | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_cidr_ipv4.txt) |
+| openai_domains.txt | txt | Domain | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_domains.txt) |
+| openai_3rd_party_cidr_ipv4.txt ² | txt | IPv4 | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_3rd_party_cidr_ipv4.txt) |
+| openai_3rd_party_domains.txt ² | txt | Domain | [Download](https://raw.githubusercontent.com/gseldon/Service-CIDR-Lists/main/OpenAI/openai_3rd_party_domains.txt) |
 
 ¹ **Outbound** addresses of Cursor Cloud Agents (traffic *from* Cursor *to* your infrastructure), not service endpoints. Allowlist them if Cursor agents must reach your git hosts.
 
