@@ -5,17 +5,6 @@
   <hr>
 </div>
 
-<div align="center">
-
-[![Issues](https://img.shields.io/github/issues/<user>/<repo>)](https://github.com/<user>/<repo>/issues)
-[![Watchers](https://img.shields.io/github/watchers/<user>/<repo>)](https://github.com/<user>/<repo>/watchers)
-[![Forks](https://img.shields.io/github/forks/<user>/<repo>)](https://github.com/<user>/<repo>/fork)
-[![Stars](https://img.shields.io/github/stars/<user>/<repo>)](https://github.com/<user>/<repo>/stargazers)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](#-license)
-[![Last commit](https://img.shields.io/github/last-commit/<user>/<repo>)](https://github.com/<user>/<repo>/commits/main)
-
-</div>
-
 ## 📋 Attributes
 
 1. IPv4-only, CIDR-only network lists in an `ipset hash:net`-compatible format. Domain lists (including wildcard masks) where the service publishes domains.
@@ -82,9 +71,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
----
-
-## 📧 Contact
-
-- Project Link: [https://github.com/<user>/<repo>](https://github.com/<user>/<repo>)
