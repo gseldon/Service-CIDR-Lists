@@ -100,6 +100,61 @@ CURSOR_DOMAINS = [
     "downloads.cursor.com",
 ]
 
+# https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps
+# Записи вида "*.domain" — маски поддоменов для доменных правил FW,
+# напрямую не резолвятся.
+OPENAI_DOMAINS = [
+    "*.auth.openai.com",
+    "*.chatgpt.com",
+    "*.oaistatic.com",
+    "*.oaiusercontent.com",
+    "*.openai.com",
+    "*.oaistatsig.com",
+    "android.chat.openai.com",
+    "auth0.openai.com",
+    "cdn.openaimerge.com",
+    "cdn.platform.openai.com",
+    "chat.openai.com",
+    "chatgpt.com",
+    "desktop.chat.openai.com",
+    "ios.chat.openai.com",
+    "setup.auth.openai.com",
+    "tcr9i.chat.openai.com",
+    "ws.chatgpt.com",
+]
+
+# Зависимости третьих сторон (не принадлежат OpenAI) — отдельная группа,
+# чтобы её можно было отключать независимо.
+OPENAI_3RD_PARTY_DOMAINS = [
+    "*.ct.sendgrid.net",
+    "*.intercom.io",
+    "*.intercomcdn.com",
+    "cdn.workos.com",
+    "challenges.cloudflare.com",
+    "forwarder.workos.com",
+    "frontend-apps-multi-region.workos.com",
+    "humb.apple.com",
+    "images.workoscdn.com",
+    "js.intercomcdn.com",
+    "js.stripe.com",
+    "o207216.ingest.sentry.io",
+    "o33249.ingest.sentry.io",
+    "rum.browser-intake-datadoghq.com",
+    "setup.workos.com",
+    "workos.imgix.net",
+]
+
+OPENAI_DIR = ROOT / "OpenAI"
+OPENAI_DOMAINS_FILE = OPENAI_DIR / "openai_domains.txt"
+OPENAI_3RD_PARTY_DOMAINS_FILE = OPENAI_DIR / "openai_3rd_party_domains.txt"
+OPENAI_CIDR_FILE = OPENAI_DIR / "openai_cidr_ipv4.txt"
+OPENAI_3RD_PARTY_CIDR_FILE = OPENAI_DIR / "openai_3rd_party_cidr_ipv4.txt"
+
+OPENAI_SOURCE_URL = (
+    "https://help.openai.com/en/articles/9247338-"
+    "network-recommendations-for-chatgpt-errors-on-web-and-apps"
+)
+
 DOH_SERVERS = [
     "https://dns.google/resolve?name={name}&type=A",
     "https://cloudflare-dns.com/dns-query?name={name}&type=A",
@@ -317,6 +372,134 @@ def update_cursor_egress() -> None:
     write_if_changed(CURSOR_ORIGIN_FILE, origin_text)
 
 
+def resolve_group(domains: list[str]) -> tuple[set[str], list[str], list[str]]:
+    """Резолвит конкретные домены группы. Возвращает (IP, inactive, wildcards)."""
+    all_ips: set[str] = set()
+    inactive: list[str] = []
+    wildcards = [d for d in domains if d.startswith("*.")]
+    for domain in domains:
+        if domain.startswith("*."):
+            continue
+        ips = resolve(domain)
+        if ips:
+            print(f"  {domain}: {', '.join(sorted(ips, key=lambda i: int(ipaddress.IPv4Address(i))))}")
+            all_ips |= ips
+        else:
+            print(f"  {domain}: нет A-записей")
+            inactive.append(domain)
+    return all_ips, inactive, wildcards
+
+
+def build_domains_text(title: str, source: str, now: str,
+                       wildcards: list[str], inactive: list[str],
+                       domains: list[str]) -> str:
+    header = f"""# ============================================================
+#
+# {title}
+#
+# List of domains for firewall rules.
+# Source: {source}
+# Updated (UTC)   : {now}
+#
+"""
+    if wildcards:
+        header += (
+            "# Wildcard entries (subdomain masks for domain-based rules, "
+            "not resolvable directly): " + ", ".join(wildcards) + "\n"
+        )
+    if inactive:
+        header += "# No A records at last check: " + ", ".join(inactive) + "\n"
+    header += "# ============================================================\n"
+    return header + "".join(f"{d}\n" for d in domains)
+
+
+def build_cidr_text(title: str, description: str, source: str,
+                    domains_ref: str, now: str, ips: set[str]) -> str:
+    header = f"""# ============================================================
+#
+# {title}
+#
+# ipv4 hash:net ipset
+#
+# {description}
+#
+# Maintainer      : DNS resolve, see scripts/update_lists.py
+# List source URL : {source}
+# Domains         : {domains_ref}
+#
+# Category        : servers
+# Updated (UTC)   : {now}
+#
+# ============================================================
+"""
+    return header + "".join(
+        f"{ip}/32\n"
+        for ip in sorted(ips, key=lambda i: int(ipaddress.IPv4Address(i)))
+    )
+
+
+def update_openai() -> None:
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    groups = [
+        {
+            "label": "OpenAI",
+            "title": "openai",
+            "domains": OPENAI_DOMAINS,
+            "domains_file": OPENAI_DOMAINS_FILE,
+            "cidr_file": OPENAI_CIDR_FILE,
+            "cidr_description": (
+                "OpenAI/ChatGPT service IP addresses "
+                "(resolved from official domains)."
+            ),
+            "domains_ref": "OpenAI/openai_domains.txt",
+        },
+        {
+            "label": "OpenAI 3rd party",
+            "title": "openai_3rd_party",
+            "domains": OPENAI_3RD_PARTY_DOMAINS,
+            "domains_file": OPENAI_3RD_PARTY_DOMAINS_FILE,
+            "cidr_file": OPENAI_3RD_PARTY_CIDR_FILE,
+            "cidr_description": (
+                "Third-party dependency IPs used by OpenAI services "
+                "(SendGrid, Intercom, WorkOS, Cloudflare, Apple, Stripe, "
+                "Sentry, Datadog). Not owned by OpenAI."
+            ),
+            "domains_ref": "OpenAI/openai_3rd_party_domains.txt",
+        },
+    ]
+
+    for group in groups:
+        print(f"-- {group['label']} --")
+        ips, inactive, wildcards = resolve_group(group["domains"])
+        if not ips:
+            print(f"  ! ни один домен группы не резолвится — CIDR-файл не тронут",
+                  file=sys.stderr)
+        else:
+            write_if_changed(
+                group["cidr_file"],
+                build_cidr_text(
+                    f"{group['title']}_cidr_ipv4",
+                    group["cidr_description"],
+                    OPENAI_SOURCE_URL,
+                    group["domains_ref"],
+                    now,
+                    ips,
+                ),
+            )
+        write_if_changed(
+            group["domains_file"],
+            build_domains_text(
+                f"{group['title']}_domains",
+                OPENAI_SOURCE_URL,
+                now,
+                wildcards,
+                inactive,
+                group["domains"],
+            ),
+        )
+
+
 def main() -> None:
     print("== WhatsApp ==")
     update_whatsapp()
@@ -324,6 +507,8 @@ def main() -> None:
     update_cursor()
     print("== Cursor (egress: git proxy + Origin) ==")
     update_cursor_egress()
+    print("== OpenAI / ChatGPT ==")
+    update_openai()
     print("Готово.")
 
 

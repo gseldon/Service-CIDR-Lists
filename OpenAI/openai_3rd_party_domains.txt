@@ -1,0 +1,26 @@
+# ============================================================
+#
+# openai_3rd_party_domains
+#
+# List of domains for firewall rules.
+# Source: https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps
+# Updated (UTC)   : 2026-11-12T21:07:23Z
+#
+# Wildcard entries (subdomain masks for domain-based rules, not resolvable directly): *.ct.sendgrid.net, *.intercom.io, *.intercomcdn.com
+# ============================================================
+*.ct.sendgrid.net
+*.intercom.io
+*.intercomcdn.com
+cdn.workos.com
+challenges.cloudflare.com
+forwarder.workos.com
+frontend-apps-multi-region.workos.com
+humb.apple.com
+images.workoscdn.com
+js.intercomcdn.com
+js.stripe.com
+o207216.ingest.sentry.io
+o33249.ingest.sentry.io
+rum.browser-intake-datadoghq.com
+setup.workos.com
+workos.imgix.net
