@@ -1,0 +1,32 @@
+# ============================================================
+#
+# cursor_cidr_ipv4
+#
+# ipv4 hash:net ipset
+#
+# List of the Cursor service IP addresses (resolved from official domains).
+#
+# Maintainer      : DNS resolve, see scripts/update_lists.py
+# List source URL : https://cursor.com/docs/cloud-agent/security-network
+# Domains         : Cursor/cursor_domains.txt
+#
+# Category        : servers
+# Updated (UTC)   : 2026-11-12T20:50:41Z
+#
+# ============================================================
+8.6.112.0/32
+8.6.112.5/32
+8.47.69.0/32
+8.47.69.5/32
+13.248.241.7/32
+34.200.87.105/32
+35.71.162.24/32
+44.213.28.243/32
+76.76.21.21/32
+98.87.193.55/32
+104.18.16.128/32
+104.18.17.128/32
+104.18.18.125/32
+104.18.19.125/32
+104.21.77.42/32
+172.67.204.117/32

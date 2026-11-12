@@ -1,0 +1,27 @@
+# ============================================================
+#
+# cursor_domains
+#
+# List of official Cursor domains.
+# Source: https://cursor.com/docs/cloud-agent/security-network
+# Updated (UTC)   : 2026-11-12T20:57:02Z
+#
+# Wildcard entries (subdomain masks for domain-based routing, not resolvable directly): *.api5.cursor.sh, *.authentication.cursor.sh
+# No A records at last check: cursorapi.com, api5.cursor.sh, authentication.cursor.sh
+# ============================================================
+cursor.com
+cursor.sh
+cursorapi.com
+cursor-cdn.com
+api2.cursor.sh
+api3.cursor.sh
+api4.cursor.sh
+api5.cursor.sh
+*.api5.cursor.sh
+repo42.cursor.sh
+authentication.cursor.sh
+*.authentication.cursor.sh
+prod.authentication.cursor.sh
+authenticator.cursor.sh
+marketplace.cursorapi.com
+downloads.cursor.com
